@@ -1,9 +1,9 @@
-let title = "";
-let screens = "";
-let screenPrice = 0;
-let rollback = 0;
-let fullPrice = 0;
-let adaptive = true;
+let title;
+let screens;
+let screenPrice;
+let rollback;
+let fullPrice;
+let adaptive;
 
 alert("alert-сообщение");
 
