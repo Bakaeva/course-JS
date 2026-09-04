@@ -1,23 +1,43 @@
-let title = "Название проекта";
-let screens = "Простые, Сложные, Интерактивные";
-let screenPrice = 5000;
-let rollback = 20;
-let fullPrice = 100000;
-let adaptive = true;
+"use strict";
 
-console.log(typeof title);
-console.log(typeof fullPrice);
-console.log(typeof adaptive);
+let title = prompt("Как называется Ваш проект?") ?? "";
+let screens =
+  prompt(
+    "Какие типы экранов нужно разработать? (перечислите через запятую, например: Простые, Сложные, Интерактивные)",
+  ) ?? "";
+let screenPrice = +prompt("Сколько будет стоить данная работа?") || 0;
 
-console.log(screens.length);
+let adaptive = confirm("Нужен ли адаптив на сайте?");
 
+let service1 = prompt("Какой дополнительный тип услуги нужен?") ?? "";
+let servicePrice1 = +prompt("Сколько это будет стоить?") || 0;
+let service2 = prompt("Какой дополнительный тип услуги нужен?") ?? "";
+let servicePrice2 = +prompt("Сколько это будет стоить?") || 0;
+
+let fullPrice = screenPrice + servicePrice1 + servicePrice2;
+
+let rollback = 20; // percent to pay for services of intermediaries
+let intermediariesServicesPrice = Math.round(fullPrice * (rollback / 100));
+let servicePercentPrice = Math.ceil(fullPrice - intermediariesServicesPrice);
 console.log(
-  "Стоимость верстки экранов " + screenPrice + " рублей/ долларов/гривен/юани",
+  "Стоимость работы за вычетом отката посреднику: " +
+    servicePercentPrice +
+    " рублей",
 );
-console.log(
-  "Стоимость разработки сайта " + fullPrice + " рублей/ долларов/гривен/юани",
-);
-console.log(screens.toLowerCase().split(", "));
-console.log(
-  "Процент отката посреднику за работу " + fullPrice * (rollback / 100),
-);
+
+let discount = 0;
+switch (true) {
+  case fullPrice >= 0 && fullPrice < 15000:
+    console.log("Скидка не предусмотрена");
+    break;
+  case fullPrice >= 15000 && fullPrice < 30000:
+    console.log("Даем скидку в 5 %");
+    discount = 5;
+    break;
+  case fullPrice >= 30000:
+    console.log("Даем скидку в 10 %");
+    discount = 10;
+    break;
+  default:
+    console.log("Что-то пошло не так");
+}
