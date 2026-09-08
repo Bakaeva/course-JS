@@ -4,46 +4,123 @@ const isNumber = function (num) {
   return !isNaN(parseFloat(num)) && isFinite(num);
 };
 
-let appData = {
+/** 
+ * Проверяет, что переданное в arg значение - строка, не являющаяся числом
+ * @param {any} arg - проверяемое значение
+ * @returns {boolean} `true`, если значение в arg - непустая строка, состоящая не только из цифр после удаления концевых пробелов
+ * 
+ * @example
+ * isValidString("4567989") // false,
+ * isValidString(" 4567989 ") // false,
+ * isValidString("4 567 989") // true
+ * isValidString("Купил ВАЗ 2108 !!!№#%") // true
+*/
+const isValidString = function (arg) {
+  if (typeof arg !== 'string' || arg.trim().length === 0) {
+    return false;
+  }
+  return arg.trim().split('').some(char => isNaN(parseFloat(char)));
+}
+
+const appData = {
   title: "", // название проекта
-  screens: "", // типы сайтов
-  screenPrice: 0, // стоимость разработки сайта
+  screens: [], // типы экранов (видимо, под экраном подразумевается веб-страница)
+  services: {}, // доп.услуги
   adaptive: true, // признак адаптивности сайта
   rollback: 20, // процент отката посреднику за работу
+  screenPrice: 0, // стоимость разработки сайта без доп.услуг
   allServicePrices: 0, // стоимость доп.услуг
-  fullPrice: 0, // стоимость разработки сайта и доп.услуг
-  servicePercentPrice: 0, // стоимость разработки сайта и доп.услуг минус стоимость отката посреднику
-  services: [], // доп.услуги
+  fullPrice: 0, // стоимость разработки сайта с доп.услугами
+  servicePercentPrice: 0, // стоимость разработки сайта с доп.услугами за вычетом стоимости отката посреднику
 
-  asking: function () {
-    this.title = this.getTitle(prompt("Как называется Ваш проект?", "Калькулятор верстки") ?? "");
-    this.screens = prompt("Какие типы сайтов нужно разработать? (перечислите через запятую)", "Простые, Сложные, Интерактивные") ?? "";
-    do {
-      this.screenPrice = prompt("Сколько будет стоить данная работа? (введите число >= 0)", 20000);
-    } while (!isNumber(this.screenPrice) || this.screenPrice < 0); // спрашиваем снова, если нажаты 'Отмена'/ESC или введена комбинация символов, не являющаяся неотриц.числом (например, пустая строка/строка пробелов/не цифры)
-    this.screenPrice = parseFloat(this.screenPrice);
+  start: function () {
+    if (!this.asking()) {
+      alert("Приложение завершило свою работу");
+      return;
+    }
 
-    this.adaptive = confirm("Нужен ли адаптив на сайте? (Если не нужен, нажмите 'Отмена' или ESC)");
+    this.getTitle();
+    this.addPrices();
+    this.getFullPrice();
+    this.getServicePercentPrices();
+
+    this.logger();
   },
 
-  getAllServicePrices: function () {
-    let result = 0;
-    let serviceType = "";
-    let servicePrice = 0;
+  asking: function () {
+    let name; // для ввода типа экрана, названия доп.услуги
+    let price; // для ввода стоимости верстки экрана с указанным в "name" типом, стоимости доп.услуги с указанным в "name" названием
 
-    while (true) {
-      if (serviceType = (prompt("Какой тип дополнительной услуги нужен? (Введите непустую строку. Если не нужен, нажмите 'Отмена' или ESC)") ?? "").trim()) {
-        do {
-          servicePrice = prompt(`Сколько "${serviceType}" будет стоить? (введите число >= 0)`);
-        } while (!isNumber(servicePrice) || servicePrice < 0);
-        servicePrice = parseFloat(servicePrice);
-        result += servicePrice;
+    do {
+      this.title = prompt("Как называется Ваш проект?\nВведите непустую строку, не являющуюся числом. Для выхода из приложения нажмите 'Отмена' или ESC", "Калькулятор верстки");
+      if (this.title === null)
+        return false; // выход, если нажаты 'Отмена'/ESC
+    } while (!isValidString(this.title));
+    this.title = this.title.trim();
 
-        this.services.push([serviceType, servicePrice]);
-      }
-      else break; // выход, если нажаты 'Отмена'/ESC или введены пустая строка/строка пробелов
+    //#region ввод this.screens (типы экранов)
+    let i = 0;
+    screensLoop: while (true) {
+      name = "";
+      price = 0;
+
+      do {
+        name = prompt("Какой тип экрана нужно разработать (например, Простой | Сложный | Интерактивный)?\nВведите непустую строку, не являющуюся числом. Если не нужен, нажмите 'Отмена' или ESC");
+        if (name === null)
+          break screensLoop; // выход из внешнего цикла ввода данных о типах экранов, если нажаты 'Отмена'/ESC
+      } while (!isValidString(name));
+
+      do {
+        price = prompt(`Сколько будет стоить верстка экрана "${name}" ? (введите число >= 0)`);
+      } while (!isNumber(price) || price < 0); // по нажатию 'Отмена'/ESC выход НЕ произойдёт, т.к. isNumber(null) == false
+
+      this.screens.push(
+        { id: i++, name: name, price: parseFloat(price) });
     };
-    return result;
+    //#endregion this.screens
+
+    //#region ввод this.services (доп.услуги)
+    servicesLoop: while (true) {
+      name = "";
+      price = 0;
+
+      do {
+        name = prompt("Какой тип дополнительной услуги нужен?\nВведите непустую строку, не являющуюся числом. Если доп.услуга не нужна, нажмите 'Отмена' или ESC");
+        if (name === null)
+          break servicesLoop; // выход из внешнего цикла ввода данных о доп.услугах, если нажаты 'Отмена'/ESC
+      } while (!isValidString(name));
+
+      do {
+        price = prompt(`Сколько будет стоить услуга "${name}" ? (введите число >= 0)`);
+      } while (!isNumber(price) || price < 0); // по нажатию 'Отмена'/ESC выход НЕ произойдёт, т.к. isNumber(null) == false
+
+      this.services[name] = parseFloat(price);
+    };
+    //#endregion ввод this.services (доп.услуги)
+
+    this.adaptive = confirm("Нужен ли адаптив на сайте? (Если не нужен, нажмите 'Отмена' или ESC)");
+    return true;
+  },
+
+  getTitle: function () {
+    const strTrim = String(this.title).trim();
+    this.title = strTrim.charAt(0).toLocaleUpperCase() + strTrim.substring(1).toLocaleLowerCase();
+  },
+
+  addPrices: function () {
+    this.screenPrice = this.screens.reduce((acc, item) => { return acc + item.price }, 0);
+
+    for (const key in this.services) {
+      this.allServicePrices += this.services[key];
+    };
+  },
+
+  getFullPrice: function () {
+    this.fullPrice = this.screenPrice + this.allServicePrices;
+  },
+
+  getServicePercentPrices: function () {
+    this.servicePercentPrice = this.fullPrice - Math.round(this.fullPrice * (this.rollback / 100));
   },
 
   getRollbackMessage: function (price) {
@@ -62,35 +139,7 @@ let appData = {
     }
   },
 
-  getFullPrice: function (price1, price2) {
-    return price1 + price2;
-  },
-
-  getTitle: function (str) {
-    const strTrim = String(str).trim();
-    return strTrim.charAt(0).toLocaleUpperCase() + strTrim.substring(1).toLocaleLowerCase();
-  },
-
-  getServicePercentPrices: function (price, percent) {
-    return price - Math.round(price * (percent / 100));
-  },
-
-  start: function () {
-    this.asking();
-
-    this.allServicePrices = this.getAllServicePrices();
-    this.title = this.getTitle(this.title);
-    this.fullPrice = this.getFullPrice(this.screenPrice, this.allServicePrices);
-    this.servicePercentPrice = this.getServicePercentPrices(this.fullPrice, this.rollback);
-
-    this.logger();
-  },
-
   logger: function () {
-    // console.log(`Типы сайтов для разработки: ${this.screens}`);
-    // console.log(`Стоимость разработки сайта: ${this.screenPrice}`);
-    // console.log(`Стоимость доп.услуг: ${this.allServicePrices}`);
-    // console.log(this.getRollbackMessage(this.fullPrice));
     // console.log(`Стоимость работы за вычетом отката (${this.rollback}%) посреднику: ${this.servicePercentPrice} рублей`);
 
     for (const key in this) {
