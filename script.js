@@ -51,6 +51,24 @@ const appData = {
     let name; // для ввода типа экрана, названия доп.услуги
     let price; // для ввода стоимости верстки экрана с указанным в "name" типом, стоимости доп.услуги с указанным в "name" названием
 
+    /**
+     * Добавление названия и стоимости доп.услуги с предварительной проверкой уникальности названия добавляемой услуги и, при необходимсоти, добавлением уникальности в название
+     * 
+     * @param {} services - объект для хранения информации (название и стоимость) о доп.услугах
+     * @param {string} key - название доп.услуги
+     * @param {number} value - стоимость доп.услуги
+     */
+    const addService = function (services, key, value) {
+      let uniqueKey = key;
+      let counter = 2; // Начинаем с 2, так как первая услуга идет без суффикса
+
+      while (Object.hasOwn(services, uniqueKey)) {
+        uniqueKey = `${key} ${counter}`;  // для 2-ой услуги с таким же названием добавляем в конце " 2", для 3-ей услуги - " 3" и т.д.
+        counter++;
+      }
+      services[uniqueKey] = value;
+    };
+
     do {
       this.title = prompt("Как называется Ваш проект?\nВведите непустую строку, не являющуюся числом. Для выхода из приложения нажмите 'Отмена' или ESC", "Калькулятор верстки");
       if (this.title === null)
@@ -94,7 +112,7 @@ const appData = {
         price = prompt(`Сколько будет стоить услуга "${name}" ? (введите число >= 0)`);
       } while (!isNumber(price) || price < 0); // по нажатию 'Отмена'/ESC выход НЕ произойдёт, т.к. isNumber(null) == false
 
-      this.services[name] = parseFloat(price);
+      addService(this.services, name, parseFloat(price));
     };
     //#endregion ввод this.services (доп.услуги)
 
@@ -141,6 +159,8 @@ const appData = {
 
   logger: function () {
     // console.log(`Стоимость работы за вычетом отката (${this.rollback}%) посреднику: ${this.servicePercentPrice} рублей`);
+    // console.log(this.screens);
+    // console.log(this.services);
 
     for (const key in this) {
       console.log(`${key}: ${this[key]}`);
